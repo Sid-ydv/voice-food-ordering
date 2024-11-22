@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Food Ordering System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .menu, .cart { margin-bottom: 20px; }
+        button { padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Voice Food Ordering System</h1>
+
+    <div class="menu">
+        <h2>Menu</h2>
+        <ul id="menu-list"></ul>
+    </div>
+
+    <div class="cart">
+        <h2>Cart</h2>
+        <ul id="cart-list"></ul>
+        <p id="total"></p>
+    </div>
+
+    <h3>Order by Voice</h3>
+    <input type="file" id="audio-input" accept="audio/*">
+    <button onclick="uploadAudio()">Upload Audio</button>
+
+    <h3>Order Manually</h3>
+    <input type="text" id="item-name" placeholder="Enter item name">
+    <button onclick="addToCart()">Add to Cart</button>
+
+    <button onclick="getBill()">Get Bill</button>
+
+    <script>
+        const menuList = document.getElementById('menu-list');
+        const cartList = document.getElementById('cart-list');
+        const totalElement = document.getElementById('total');
+
+        // Fetch menu
+        fetch('/menu')
+            .then(response => response.json())
+            .then(menu => {
+                menu.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = `${item['Item Name']} - $${item['Price']}`;
+                    menuList.appendChild(li);
+                });
+            });
+
+        // Add item to cart manually
+        function addToCart() {
+            const itemName = document.getElementById('item-name').value;
+            fetch('/add_to_cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_name: itemName })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message));
+        }
+
+        // Upload audio
+        function uploadAudio() {
+            const audioInput = document.getElementById('audio-input').files[0];
+            const formData = new FormData();
+            formData.append('audio', audioInput);
+
+            fetch('/voice_command', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message));
+        }
+
+        // Get bill
+        function getBill() {
+            fetch('/bill')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.cart) {
+                        cartList.innerHTML = '';
+                        data.cart.forEach(item => {
+                            const li = document.createElement('li');
+                            li.textContent = `${item['Item Name']} - $${item['Price']}`;
+                            cartList.appendChild(li);
+                        });
+                        totalElement.textContent = `Total: $${data.total}`;
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        }
+    </script>
+</body>
+</html>
